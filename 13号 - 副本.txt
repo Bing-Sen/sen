@@ -1,0 +1,211 @@
+1.安装oracle软件
+2.安装oracle客户端工具
+3.oracle基本操作  关系型  
+4.oracle  mysql  sqlserver 关系型数据库 
+sql：结构化查询语言  语法几乎相同 稍有差异
+    ddl 数据定义语言  结构  create alter drop
+    dml 数据操作语言  数据  insert update delete
+    dql 数据查询语言  查询  select
+    dcl 数据控制语言  权限、事务等     grant revoke commit rollback
+   mysql和oracle：
+   语法：
+        数据类型  mysql:int       double         char  varchar
+                 oracle:number   number(10,2)   char  varchar2
+        自增      mysql:auto_increment         
+                 oracle: sequence
+                 1.创建序列
+                    create sequence seq_表名_字段名 increment by 1 start with 1 max value 99999;
+                 2.使用序列
+                    select seq_表名_字段名.nextval from dual;
+                    select seq_表名_字段名.currval from dual;
+    oracle常用内置函数：
+        1.大小写  uppper lower initcap
+        2.合并列  concat(列1，列2)
+        3.截取    substr(列名，startIndex,length)
+        4.补齐    lpad  rpad
+        5.字符串长度 length(列名)
+        6.去除字符串 trim('s' from 列名)
+        7.round
+        8.trunc  trunc(100.11)
+        9.mod
+        
+        10.to_char   转换为字符串型 
+            select * from emp;
+            select sal,to_char(sal,'$999,999,999,999.99') from emp;
+            select sal,to_char(sal,'$000,000,000,000.00') from emp;
+            select sal,to_char(sal,'L999,999,999,999.99') from emp;
+            select sal,to_char(sal,'L000,000,000,000.00') from emp;
+            
+            select hiredate,to_char(hiredate,'YYYY-MM-DD HH24:MI:SS AM') from emp;
+        11.to_number
+        12.to_date --更新学生表，将id=4的birthday ，修改为
+            select to_char(birthday,'YYYY-MM-DD HH24:MI:SS')  from student;
+            update student set birthday=to_date('1998-12-12 6:6:6','YYYY-MM-DD HH24:MI:SS') where id = 4;
+        13.时间函数
+            select add_months(sysdate,-12) from dual;
+            --计算emp表中员工工龄 ， 按照系统当前时间计算
+            select trunc(months_between(sysdate,hiredate)/12) from emp;
+        14.计算员工工资+奖金总和 nvl(comm,0) 如果comm字段值为空，用0替换
+        select * from emp;
+        select ename,sal+nvl(comm,0) from emp;
+        15.nvl2()   三元
+        --user表  address地址  address1
+        nvl2(表达式，表达式1，表达式2)
+        select comm,nvl2(comm,'yes','no') from emp;
+        select comm,nvl2(comm,0,1) from emp;         
+        16.--分页   
+        mysql：limit
+        oracle：rownum
+        sqlserver: top
+        -- 按照工资由低到高，查询前5个员工
+        select * from emp order by sal asc;
+        
+        select e.* from (select * from emp order by sal asc) e where rownum<=5;
+        
+        select emp.* ,rownum from emp where rownum<=5;
+        --按照工资由低到高排序，查找第六个到第10个员工的信息
+        --rownum 在表中不存在，伪列，是在最终输出数据的时候，显示序号
+        
+         select e.* from (select emp.* ,rownum rn from emp where rownum<=10) e  where e.rn>5;
+                 
+         select e.* from (select emp.* ,rownum rn from emp ) e  where e.rn>5 and e.rn<=10;
+                 
+         select e.* from (select emp.* ,rownum rn from emp order by sal asc) e  where e.rn between 6 and 10 ;           
+                 
+           ----------------------------------------------
+--表table 视图view 索引index 存储过程procedure 函数function 触发器trigger
+--视图 view  提高系统的安全性，简化查询语句
+--view 只有结构，没有数据，数据还是在基表中存储 
+    select * from view1;
+    
+    create view emp_0 as select * from emp;
+    
+    select * from emp_0;
+    
+    create view emp_2 as          
+    select e.* from (select emp.* ,rownum rn from emp order by sal asc) e  where e.rn between 6 and 10 ;           
+               
+    select * from emp_2;
+  -- plsql 块 没有名字，只能执行一次
+  begin
+    update emp set sal=sal+200;
+    delete from emp where sal<1000;
+  end;
+  
+  create table account(userId number,money number(10,2));
+  create table orders(userId number,money number(10,2),create_time timestamp);
+  
+  select * from orders;
+  select * from account;
+  insert into account values (1,1000);
+  
+  --存储过程  定义存储过程  调用存储过程
+  --1.掌握存储过程的语法
+  create or replace procedure proc_01(
+    id in number,
+    money out number
+  )
+  as
+  begin
+    select money into money from emp where empno=id; 
+    exception
+        when others then
+        rollback;
+  end;
+  
+ --声明变量 
+DECLARE
+  ID NUMBER;
+  MONEY NUMBER;
+BEGIN
+  ID := 7369;
+
+  PROC_01(
+    ID => ID,
+    MONEY => MONEY
+  );
+--打印输出
+DBMS_OUTPUT.PUT_LINE('MONEY = ' || MONEY);
+
+  :MONEY := MONEY;
+--rollback; 
+END;
+
+set SERVEROUTPUT on;
+  
+  
+  
+  
+  
+  
+  
+  CREATE OR REPLACE PROCEDURE PROC_ADDORDER 
+(
+  USERID IN NUMBER , 
+  MONEY IN NUMBER , 
+  RESULT OUT VARCHAR2 
+) AS 
+BEGIN
+  insert into orders values (1,200,sysdate);
+  update account set money = money-200 where userid = 1;
+END PROC_ADDORDER;
+  
+DECLARE
+  USERID NUMBER;
+  MONEY NUMBER;
+  RESULT VARCHAR2(200);
+BEGIN
+  USERID := NULL;
+  MONEY := NULL;
+
+  PROC_ADDORDER(
+    USERID => USERID,
+    MONEY => MONEY,
+    RESULT => RESULT
+  );
+  /* Legacy output: 
+DBMS_OUTPUT.PUT_LINE('RESULT = ' || RESULT);
+*/ 
+  :RESULT := RESULT;
+--rollback; 
+END;
+
+  --函数  和存储过程功能相同，但是不同  
+  --存储过程可以定义返回值，也可以不定义
+  --函数必须定义返回值
+  CREATE OR REPLACE FUNCTION FUNC_01 
+(
+  ID IN NUMBER 
+) 
+RETURN VARCHAR2 AS 
+    ename varchar2(12);
+BEGIN
+    select ename into ename from emp where empno=id;
+  RETURN ename;
+END FUNC_01;
+
+select FUNC_01(7369) from dual;  -- upper('')  concat(co1,col2)
+  
+--  触发器 trigger 防止数据误操作/内部暗箱操作  
+account 1000  1  5:00
+account 1200  1  5:10
+account 1800  1  5:50
+select * from account;
+create  table account_bak as select * from account where 1=0;
+--向 account_bak 表中添加一个时间字段 
+alter table account_bak  add operate_time timestamp;
+select * from account_bak;  
+--创建触发器，当修改account表中数据时，将修改之前的数据备份到 account_bak
+CREATE OR REPLACE TRIGGER TRG_ACCOUNT 
+BEFORE UPDATE OF MONEY ON ACCOUNT 
+BEGIN
+  insert into account_bak select userid,money,sysdate  from account;
+END;
+--测试触发器，看备份表中是否有数据
+update account set money=money+100 ;
+select * from account;
+    
+    
+    
+          
+                 
